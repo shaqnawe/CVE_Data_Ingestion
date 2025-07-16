@@ -1,0 +1,45 @@
+# Environment files
+.env
+.env*
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.so
+
+# OS files
+.DS_Store
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+
+# Test and coverage
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Database files
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# Redis
+dump.rdb
+
+# Jupyter Notebooks (optional)
+*.ipynb
+
+# Local data
+nvd_recent_feed.json

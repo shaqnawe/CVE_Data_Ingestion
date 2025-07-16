@@ -3,10 +3,15 @@ from sqlmodel import Session, select, cast, String
 from db import get_session
 from models import CVEItem, CVEPage
 import etl
-import json
-from cache import redis_client
 from sqlalchemy import func
 from limiter import limiter
+from cache import (
+    get_cache,
+    set_cache,
+    make_cache_key,
+    serialize_model,
+    deserialize_model,
+)
 
 router = APIRouter()
 
@@ -15,17 +20,22 @@ router = APIRouter()
 @limiter.limit("10/minute")
 def fetch_nvd(request: Request):
     # print(request.client.host)
-    etl.fetch_and_save_feed()
+    fetch_metrics = etl.fetch_and_save_feed()
     cve_items = etl.parse_cve_items()
-    return {"message": f"Fetched and parsed {len(cve_items)} CVE entries"}
+    return {
+        "message": f"Fetched and parsed {len(cve_items)} CVE entries",
+        "metrics": fetch_metrics,
+    }
 
 
 @router.post("/ingest-nvd-feed")
 @limiter.limit("10/minute")
 def ingest_nvd_feed(request: Request):
-    etl.fetch_and_save_feed()
-    etl.transform_and_load()
-    return {"message": "NVD feed fetched, parsed, and loaded into database"}
+    pipeline_metrics = etl.run_etl_pipeline()
+    return {
+        "message": "NVD feed fetched, parsed, and loaded into database",
+        "metrics": pipeline_metrics,
+    }
 
 
 @router.get("/cves/{cve_id}", response_model=CVEItem)
@@ -50,18 +60,15 @@ def list_cves(
 ):
     capped_limit = min(limit, 100)
     total = session.exec(select(func.count()).select_from(CVEItem)).one()
-    cache_key = f"cves:skip={skip}:limit={limit}"
-    cached = redis_client.get(cache_key)
+    cache_key = make_cache_key("cves", skip=skip, limit=limit)
+    cached = get_cache(cache_key)
     if cached:
         print("Serving from Redis cache!")
-        # redis_client is configured to return decoded result
-        # by default so adding ignore to avoid type warning
-        return CVEPage(**json.loads(cached))  # type:ignore
+        return deserialize_model(cached, CVEPage)
     statement = select(CVEItem).offset(skip).limit(limit)
     items = list(session.exec(statement).all())
-    # Cache for 5 minutes
     page = CVEPage(total=total, skip=skip, limit=capped_limit, items=items)
-    redis_client.setex(cache_key, 300, page.model_dump_json())
+    set_cache(cache_key, serialize_model(page), 300)
     return page
 
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { TaskStatus, TaskResult, TaskInfo } from '../types';
+import type { TaskStatus } from '../types';
+import { getStatusColor, getStatusText } from '../utils/taskHelpers';
 
 const TaskManager = () => {
     const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -35,36 +36,6 @@ const TaskManager = () => {
             setActiveTaskId(null);
         }
     }, [latestStatus]);
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'SUCCESS':
-                return 'text-green-600'
-            case 'FAILURE':
-                return 'text-red-600'
-            case 'PENDING':
-                return 'text-yellow-600'
-            case 'PROGRESS':
-                return 'text-blue-600'
-            default:
-                return 'text-gray-600'
-        }
-    };
-
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'SUCCESS':
-                return 'Completed Successfully'
-            case 'FAILURE':
-                return 'Failed'
-            case 'PENDING':
-                return 'Queued'
-            case 'PROGRESS':
-                return 'Running'
-            default:
-                return status
-        }
-    };
 
     return (
         <div className="bg-white shadow-md rounded-lg p-6">

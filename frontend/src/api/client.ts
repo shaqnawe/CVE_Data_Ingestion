@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { CVEItem, CVEPage, ETLPipelineResponse, TaskStatus } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -49,11 +49,6 @@ export const api = {
     },
 
     getTaskStatus: async (taskId: string): Promise<TaskStatus> => {
-        //     task_id: string;
-        //     status: string;
-        //     result?: any;
-        //     info?: any;
-        //   }> => {
         const response = await apiClient.get(`/task-status/${taskId}`);
         return response.data;
     },

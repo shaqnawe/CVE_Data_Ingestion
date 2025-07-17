@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { api, type CVEItem } from '../api/client';
+import { api } from '../api/client';
+import type { CVEItem } from '../types';
 
 const CVEList = () => {
   const [page, setPage] = useState(0);

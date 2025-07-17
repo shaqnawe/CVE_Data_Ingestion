@@ -12,6 +12,8 @@ from cache import (
     serialize_model,
     deserialize_model,
 )
+from celery_app import celery_app
+from tasks import run_etl_pipeline, fetch_nvd_feed, transform_and_load
 
 router = APIRouter()
 
@@ -98,3 +100,65 @@ def search_cves(
     )
     results = session.exec(statement).all()
     return results
+
+
+@router.post("/trigger-etl")
+@limiter.limit("1/minute")
+def trigger_etl(request: Request):
+    try:
+        task = run_etl_pipeline.delay()
+        return {
+            "message": "ETL pipeline triggered successfully",
+            "task_id": task.id,
+            "status": "PENDING",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger ETL: {str(e)}")
+
+
+@router.get("/task-status/{task_id}")
+def get_task_status(task_id: str):
+    try:
+        task_result = celery_app.AsyncResult(task_id)
+        return {
+            "task_id": task_id,
+            "status": task_result.status,
+            "result": task_result.result if task_result.ready() else None,
+            "info": task_result.info if hasattr(task_result, "info") else None,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get task status: {str(e)}"
+        )
+
+
+@router.post("/trigger-fetch")
+@limiter.limit("5/minute")
+def trigger_fetch(request: Request):
+    try:
+        task = fetch_nvd_feed.delay()
+        return {
+            "message": "Fetch triggered successfully",
+            "task_id": task.id,
+            "status": "PENDING",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to trigger fetch: {str(e)}"
+        )
+
+
+@router.post("/trigger-transform")
+@limiter.limit("5/minute")
+def trigger_transform(request: Request):
+    try:
+        task = transform_and_load.delay()
+        return {
+            "message": "Transform and load triggered successfully",
+            "task_id": task.id,
+            "status": "PENDING",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to trigger transform: {str(e)}"
+        )

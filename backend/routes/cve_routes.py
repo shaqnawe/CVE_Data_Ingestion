@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlmodel import Session, select, cast, String
 from db import get_session
 from models import CVEItem, CVEPage
 import etl
-from sqlalchemy import func
+from sqlalchemy import func, desc, asc
 from limiter import limiter
 from cache import (
     get_cache,
@@ -14,6 +14,7 @@ from cache import (
 )
 from celery_app import celery_app
 from tasks import run_etl_pipeline, fetch_nvd_feed, transform_and_load
+from typing import Optional
 
 router = APIRouter()
 
@@ -58,16 +59,55 @@ def list_cves(
     request: Request,
     skip: int = 0,
     limit: int = 10,
+    severity: Optional[str] = Query(
+        None, description="Filter by severity (HIGH, MEDIUM, LOW)"
+    ),
+    sort_by: Optional[str] = Query(
+        None, description="Sort by field (cvss_v3_score, published_date)"
+    ),
+    order: Optional[str] = Query("asc", description="Sort order (asc, desc)"),
     session: Session = Depends(get_session),
 ):
     capped_limit = min(limit, 100)
-    total = session.exec(select(func.count()).select_from(CVEItem)).one()
-    cache_key = make_cache_key("cves", skip=skip, limit=limit)
+
+    # Build base query
+    base_query = select(CVEItem)
+
+    # Add severity filter if provided
+    if severity and severity.upper() in ["HIGH", "MEDIUM", "LOW"]:
+        base_query = base_query.where(CVEItem.severity == severity.upper())
+
+    # Add sorting if provided
+    if sort_by and order:
+        if sort_by == "cvss_v3_score":
+            if order.lower() == "desc":
+                base_query = base_query.order_by(desc(CVEItem.cvss_v3_score))
+            else:
+                base_query = base_query.order_by(asc(CVEItem.cvss_v3_score))
+        elif sort_by == "published_date":
+            if order.lower() == "desc":
+                base_query = base_query.order_by(desc(CVEItem.published_date))
+            else:
+                base_query = base_query.order_by(asc(CVEItem.published_date))
+
+    # Get total count with filters
+    count_query = select(func.count()).select_from(CVEItem)
+    if severity and severity.upper() in ["HIGH", "MEDIUM", "LOW"]:
+        count_query = count_query.where(CVEItem.severity == severity.upper())
+    total = session.exec(count_query).one()
+
+    # Add pagination
+    statement = base_query.offset(skip).limit(capped_limit)
+
+    # Cache key includes filter and sort parameters
+    cache_key = make_cache_key(
+        "cves", skip=skip, limit=limit, severity=severity, sort_by=sort_by, order=order
+    )
     cached = get_cache(cache_key)
     if cached:
         print("Serving from Redis cache!")
         return deserialize_model(cached, CVEPage)
-    statement = select(CVEItem).offset(skip).limit(limit)
+
     items = list(session.exec(statement).all())
     page = CVEPage(total=total, skip=skip, limit=capped_limit, items=items)
     set_cache(cache_key, serialize_model(page), 300)
@@ -90,14 +130,42 @@ def get_cves_by_severity(
 
 @router.get("/cves/search/", response_model=list[CVEItem])
 def search_cves(
-    query: str, skip: int = 0, limit: int = 10, session: Session = Depends(get_session)
+    query: str,
+    skip: int = 0,
+    limit: int = 10,
+    severity: Optional[str] = Query(
+        None, description="Filter by severity (HIGH, MEDIUM, LOW)"
+    ),
+    sort_by: Optional[str] = Query(
+        None, description="Sort by field (cvss_v3_score, published_date)"
+    ),
+    order: Optional[str] = Query("asc", description="Sort order (asc, desc)"),
+    session: Session = Depends(get_session),
 ):
-    statement = (
-        select(CVEItem)
-        .where(cast(CVEItem.description, String).ilike(f"%{query}%"))
-        .offset(skip)
-        .limit(limit)
+    # Build base query with search
+    base_query = select(CVEItem).where(
+        cast(CVEItem.description, String).ilike(f"%{query}%")
     )
+
+    # Add severity filter if provided
+    if severity and severity.upper() in ["HIGH", "MEDIUM", "LOW"]:
+        base_query = base_query.where(CVEItem.severity == severity.upper())
+
+    # Add sorting if provided
+    if sort_by and order:
+        if sort_by == "cvss_v3_score":
+            if order.lower() == "desc":
+                base_query = base_query.order_by(desc(CVEItem.cvss_v3_score))
+            else:
+                base_query = base_query.order_by(asc(CVEItem.cvss_v3_score))
+        elif sort_by == "published_date":
+            if order.lower() == "desc":
+                base_query = base_query.order_by(desc(CVEItem.published_date))
+            else:
+                base_query = base_query.order_by(asc(CVEItem.published_date))
+
+    # Add pagination
+    statement = base_query.offset(skip).limit(limit)
     results = session.exec(statement).all()
     return results
 

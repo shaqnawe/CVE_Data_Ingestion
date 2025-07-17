@@ -46,12 +46,13 @@ def get_cache(key: str):
             logger.info(f"[CACHE MISS] {versioned_key}")
             return None
         if not isinstance(cached, str):
-            logger.warning(f"[CACHE TYPE WARNING] {versioned_key} is not a string.")
+            logger.warning(f"[CACHE TYPE WARNING] {versioned_key} is not a string. Type: {type(cached)}")
             return None
         logger.info(f"[CACHE HIT] {versioned_key}")
         try:
             return json.loads(cached)
         except Exception:
+            logger.warning(f"[CACHE FALLBACK][NOT JSON] {versioned_key}")
             return cached  # fallback if not JSON
     except Exception as e:
         logger.error(f"[CACHE ERROR][GET] {versioned_key}: {e}")

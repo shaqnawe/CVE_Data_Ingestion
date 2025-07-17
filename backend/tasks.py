@@ -2,11 +2,18 @@ import logging
 from celery import current_task
 from celery_app import celery_app
 import etl
+from sqlalchemy.exc import SQLAlchemyError
+from requests.exceptions import RequestException
 
 logger = logging.getLogger("celery_tasks")
 
 
-@celery_app.task(bind=True, name="tasks.run_etl_pipeline")
+@celery_app.task(
+    bind=True,
+    name="tasks.run_etl_pipeline",
+    autoretry_for=(RequestException, SQLAlchemyError),
+    retry_kwargs={"max_retries": 3, "countdown": 60, "retry_backoff": True},
+)
 def run_etl_pipeline(self):
     """
     Celery task to run the ETL pipeline.
@@ -36,7 +43,12 @@ def run_etl_pipeline(self):
         raise e
 
 
-@celery_app.task(bind=True, name="tasks.fetch_nvd_feed")
+@celery_app.task(
+    bind=True,
+    name="tasks.fetch_nvd_feed",
+    autoretry_for=(RequestException, SQLAlchemyError),
+    retry_kwargs={"max_retries": 3, "countdown": 60, "retry_backoff": True},
+)
 def fetch_nvd_feed(self):
     """
     Celery task to fetch NVD feed only.
@@ -59,7 +71,12 @@ def fetch_nvd_feed(self):
         )
 
 
-@celery_app.task(bind=True, name="tasks.transform_and_load")
+@celery_app.task(
+    bind=True,
+    name="tasks.transform_and_load",
+    autoretry_for=(RequestException, SQLAlchemyError),
+    retry_kwargs={"max_retries": 3, "countdown": 60, "retry_backoff": True},
+)
 def transform_and_load(self):
     """
     Celery task to transform and load data only.

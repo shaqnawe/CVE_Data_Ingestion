@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { TaskStatus } from '../types';
 import { getStatusColor, getStatusText } from '../utils/taskHelpers';
@@ -45,7 +45,7 @@ const TaskManager = () => {
                 <button
                     onClick={() => triggerETLMutation.mutate()}
                     disabled={triggerETLMutation.isPending}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                    className="px-4 py-2 bg-green-50 text-green-900 rounded hover:bg-green-700 disabled:opacity-50"
                 >
                     {triggerETLMutation.isPending ? 'Triggering...' : 'Run Full ETL'}
                 </button>

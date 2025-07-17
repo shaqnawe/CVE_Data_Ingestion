@@ -12,9 +12,30 @@ const apiClient = axios.create({
 
 // API functions
 export const api = {
-    // Get paginated CVE list
-    getCVEs: async (skip: number = 0, limit: number = 10): Promise<CVEPage> => {
-        const response = await apiClient.get(`/cves/?skip=${skip}&limit=${limit}`);
+    // Get paginated CVE list with filtering and sorting
+    getCVEs: async (
+        skip: number = 0, 
+        limit: number = 10, 
+        severity?: string, 
+        sort_by?: string, 
+        order?: string
+    ): Promise<CVEPage> => {
+        const params = new URLSearchParams({
+            skip: skip.toString(),
+            limit: limit.toString(),
+        });
+        
+        if (severity && severity !== 'ALL') {
+            params.append('severity', severity);
+        }
+        if (sort_by) {
+            params.append('sort_by', sort_by);
+        }
+        if (order) {
+            params.append('order', order);
+        }
+        
+        const response = await apiClient.get(`/cves/?${params.toString()}`);
         return response.data;
     },
 
@@ -24,9 +45,32 @@ export const api = {
         return response.data;
     },
 
-    // Search CVEs
-    searchCVEs: async (query: string, skip: number = 0, limit: number = 10): Promise<CVEItem[]> => {
-        const response = await apiClient.get(`/cves/search/?query=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`);
+    // Search CVEs with filtering and sorting
+    searchCVEs: async (
+        query: string, 
+        skip: number = 0, 
+        limit: number = 10, 
+        severity?: string, 
+        sort_by?: string, 
+        order?: string
+    ): Promise<CVEItem[]> => {
+        const params = new URLSearchParams({
+            query,
+            skip: skip.toString(),
+            limit: limit.toString(),
+        });
+        
+        if (severity && severity !== 'ALL') {
+            params.append('severity', severity);
+        }
+        if (sort_by) {
+            params.append('sort_by', sort_by);
+        }
+        if (order) {
+            params.append('order', order);
+        }
+        
+        const response = await apiClient.get(`/cves/search/?${params.toString()}`);
         return response.data;
     },
 

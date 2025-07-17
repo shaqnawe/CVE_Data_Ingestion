@@ -43,3 +43,65 @@ dump.rdb
 
 # Local data
 nvd_recent_feed.json
+
+# Node.js/Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Frontend build outputs
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Celery
+celerybeat-schedule
+celerybeat-schedule.db
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+
+# Jupyter (if you add data analysis notebooks)
+.ipynb_checkpoints/
+
+# PostgreSQL
+*.sql
+*.dump
+
+# Redis persistence
+*.rdb
+*.aof
+
+# Coverage reports
+coverage.xml
+.coverage.*
+
+# Local development
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Temporary files
+*.tmp
+*.temp
+
+# ETL data files
+*.json.gz
+*.csv
+data/
+feeds/
+
+# Application logs
+logs/
+*.log.*
+
+# Monitoring
+.prometheus/

@@ -13,7 +13,7 @@ celery_app = Celery(
     "cve_etl",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
-    include=["backend.tasks"]
+    include=["tasks"],
 )
 
 # Celery settings
@@ -34,6 +34,6 @@ celery_app.conf.update(
 celery_app.conf.beat_schedule = {
     "run-etl-pipeline": {
         "task": "tasks.run_etl_pipeline",
-        "schedule": 360  # Run every hour
+        "schedule": 360,  # Run every hour
     },
-} 
+}

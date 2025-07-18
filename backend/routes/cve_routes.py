@@ -188,10 +188,20 @@ def trigger_etl(request: Request):
 def get_task_status(task_id: str):
     try:
         task_result = celery_app.AsyncResult(task_id)
+
+        # Get the current state info for progress tracking
+        current_info = None
+        if task_result.state == "PROGRESS":
+            # For progress state, get the current meta information
+            current_info = task_result.info
+        elif task_result.ready():
+            # For completed tasks, get the final result
+            current_info = task_result.result
+
         return {
             "task_id": task_id,
             "status": task_result.status,
-            "result": task_result.result if task_result.ready() else None,
+            "result": current_info,
             "info": task_result.info if hasattr(task_result, "info") else None,
         }
     except Exception as e:

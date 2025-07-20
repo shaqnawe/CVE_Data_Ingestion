@@ -10,21 +10,35 @@ const apiClient = axios.create({
     },
 });
 
+// Add request interceptor to include auth token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 // API functions
 export const api = {
     // Get paginated CVE list with filtering and sorting
     getCVEs: async (
-        skip: number = 0, 
-        limit: number = 10, 
-        severity?: string, 
-        sort_by?: string, 
+        skip: number = 0,
+        limit: number = 10,
+        severity?: string,
+        sort_by?: string,
         order?: string
     ): Promise<CVEPage> => {
         const params = new URLSearchParams({
             skip: skip.toString(),
             limit: limit.toString(),
         });
-        
+
         if (severity && severity !== 'ALL') {
             params.append('severity', severity);
         }
@@ -34,7 +48,7 @@ export const api = {
         if (order) {
             params.append('order', order);
         }
-        
+
         const response = await apiClient.get(`/cves/?${params.toString()}`);
         return response.data;
     },
@@ -45,33 +59,28 @@ export const api = {
         return response.data;
     },
 
-    // Search CVEs with filtering and sorting
+    // Search CVEs using Elasticsearch
     searchCVEs: async (
-        query: string, 
-        skip: number = 0, 
-        limit: number = 10, 
-        severity?: string, 
-        sort_by?: string, 
+        query: string,
+        skip: number = 0,
+        limit: number = 10,
+        severity?: string,
+        sort_by?: string,
         order?: string
     ): Promise<CVEItem[]> => {
-        const params = new URLSearchParams({
+        // Use Elasticsearch search instead of PostgreSQL
+        const response = await api.searchElasticsearch(
             query,
-            skip: skip.toString(),
-            limit: limit.toString(),
-        });
+            severity && severity !== 'ALL' ? severity : undefined,
+            undefined, // minCvssScore
+            undefined, // maxCvssScore
+            undefined, // fromDate
+            undefined, // toDate
+            limit,
+            skip
+        );
         
-        if (severity && severity !== 'ALL') {
-            params.append('severity', severity);
-        }
-        if (sort_by) {
-            params.append('sort_by', sort_by);
-        }
-        if (order) {
-            params.append('order', order);
-        }
-        
-        const response = await apiClient.get(`/cves/search/?${params.toString()}`);
-        return response.data;
+        return response.results || [];
     },
 
     // Get CVEs by severity
@@ -104,6 +113,39 @@ export const api = {
 
     triggerTransform: async (): Promise<{ task_id: string; status: string; message: string }> => {
         const response = await apiClient.post('/trigger-transform');
+        return response.data;
+    },
+
+    // Elasticsearch search
+    searchElasticsearch: async (
+        query: string,
+        severity?: string,
+        minCvssScore?: number,
+        maxCvssScore?: number,
+        fromDate?: string,
+        toDate?: string,
+        size: number = 10,
+        from: number = 0
+    ): Promise<any> => {
+        const params = new URLSearchParams({
+            query,
+            size: size.toString(),
+            from: from.toString(),
+        });
+        
+        if (severity) params.append('severity', severity);
+        if (minCvssScore !== undefined) params.append('min_cvss_score', minCvssScore.toString());
+        if (maxCvssScore !== undefined) params.append('max_cvss_score', maxCvssScore.toString());
+        if (fromDate) params.append('from_date', fromDate);
+        if (toDate) params.append('to_date', toDate);
+        
+        const response = await apiClient.get(`/elasticsearch/search?${params.toString()}`);
+        return response.data;
+    },
+
+    // Get Elasticsearch stats
+    getElasticsearchStats: async (): Promise<any> => {
+        const response = await apiClient.get('/elasticsearch/stats');
         return response.data;
     },
 };

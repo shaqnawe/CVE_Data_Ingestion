@@ -6,11 +6,12 @@ import requests
 import logging
 import time
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 from db import get_context_session
 from dotenv import load_dotenv
 from crud import upsert_cve_items
 from models import CVEItem, CVEReference
+from elasticsearch_config import bulk_index_cve_items, create_cve_index
 
 load_dotenv()
 NVD_RECENT_FEED_URL = os.getenv("NVD_RECENT_FEED_URL", "")
@@ -29,7 +30,7 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 
-def fetch_and_save_feed() -> Dict[str, Any]:
+def fetch_and_save_feed() -> dict[str, Any]:
     """
     Fetch NVD feed and save to local file.
     Returns metrics about the operation.
@@ -79,7 +80,7 @@ def fetch_and_save_feed() -> Dict[str, Any]:
     return metrics
 
 
-def parse_cve_items() -> List[CVEItem]:
+def parse_cve_items() -> list[CVEItem]:
     """
     Parse CVE items from the downloaded feed.
     Returns list of validated CVEItem objects.
@@ -158,7 +159,7 @@ def parse_cve_items() -> List[CVEItem]:
     return cve_items
 
 
-def transform_and_load() -> Dict[str, Any]:
+def transform_and_load() -> dict[str, Any]:
     """
     Transform and load CVE items into the database.
     Returns metrics about the operation.
@@ -189,6 +190,12 @@ def transform_and_load() -> Dict[str, Any]:
             # Note: You might want to enhance crud.upsert_cve_items to return detailed metrics
             upsert_cve_items(session, cve_items)
 
+        # Index in Elasticsearch
+        logger.info("Indexing CVE items in Elasticsearch...")
+        es_metrics = bulk_index_cve_items(cve_items)
+        metrics["elasticsearch"] = es_metrics
+        logger.info(f"Elasticsearch indexing: {es_metrics['success_count']} successful, {es_metrics['error_count']} errors")
+
         duration = time.time() - start_time
         metrics["duration_seconds"] = duration
         logger.info(
@@ -205,7 +212,7 @@ def transform_and_load() -> Dict[str, Any]:
     return metrics
 
 
-def run_etl_pipeline() -> Dict[str, Any]:
+def run_etl_pipeline() -> dict[str, Any]:
     """
     Run the complete ETL pipeline with comprehensive monitoring.
     Returns overall pipeline metrics.
@@ -231,6 +238,10 @@ def run_etl_pipeline() -> Dict[str, Any]:
         logger.info("=== STAGE 2: TRANSFORM AND LOAD ===")
         load_metrics = transform_and_load()
         pipeline_metrics["stages"]["load"] = load_metrics
+
+        # Stage 3: Setup Elasticsearch (if needed)
+        logger.info("=== STAGE 3: ELASTICSEARCH SETUP ===")
+        create_cve_index()
 
         total_duration = time.time() - pipeline_start
         pipeline_metrics["total_duration_seconds"] = total_duration

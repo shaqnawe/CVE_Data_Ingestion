@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlmodel import Session, select, cast, String
 from db import get_session
-from models import CVEItem, CVEPage
+from models import CVEItem, CVEPage, User
 import etl
 from sqlalchemy import func, desc, asc
 from limiter import limiter
@@ -14,6 +14,7 @@ from cache import (
 )
 from celery_app import celery_app
 from tasks import run_etl_pipeline, fetch_nvd_feed, transform_and_load
+from auth import get_current_active_user, require_role
 from typing import Optional
 
 router = APIRouter()
@@ -21,7 +22,7 @@ router = APIRouter()
 
 @router.post("/fetch-nvd-feed")
 @limiter.limit("10/minute")
-def fetch_nvd(request: Request):
+def fetch_nvd(request: Request, current_user: User = Depends(require_role("admin"))):
     # print(request.client.host)
     fetch_metrics = etl.fetch_and_save_feed()
     cve_items = etl.parse_cve_items()
@@ -33,7 +34,9 @@ def fetch_nvd(request: Request):
 
 @router.post("/ingest-nvd-feed")
 @limiter.limit("10/minute")
-def ingest_nvd_feed(request: Request):
+def ingest_nvd_feed(
+    request: Request, current_user: User = Depends(require_role("admin"))
+):
     pipeline_metrics = etl.run_etl_pipeline()
     return {
         "message": "NVD feed fetched, parsed, and loaded into database",
@@ -44,7 +47,10 @@ def ingest_nvd_feed(request: Request):
 @router.get("/cves/{cve_id}", response_model=CVEItem)
 @limiter.limit("1/minute")
 def get_cve_by_id(
-    request: Request, cve_id: str, session: Session = Depends(get_session)
+    request: Request,
+    cve_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
 ):
     statement = select(CVEItem).where(CVEItem.cve_id == cve_id)
     result = session.exec(statement).first()
@@ -67,6 +73,7 @@ def list_cves(
     ),
     order: Optional[str] = Query("asc", description="Sort order (asc, desc)"),
     session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_active_user),
 ):
     capped_limit = min(limit, 100)
 
@@ -172,7 +179,7 @@ def search_cves(
 
 @router.post("/trigger-etl")
 @limiter.limit("1/minute")
-def trigger_etl(request: Request):
+def trigger_etl(request: Request, current_user: User = Depends(require_role("admin"))):
     try:
         task = run_etl_pipeline.delay()
         return {
@@ -181,6 +188,9 @@ def trigger_etl(request: Request):
             "status": "PENDING",
         }
     except Exception as e:
+        import traceback
+        error_details = f"Failed to trigger ETL: {str(e)}\nTraceback: {traceback.format_exc()}"
+        print(f"ETL Error: {error_details}")  # Log to console
         raise HTTPException(status_code=500, detail=f"Failed to trigger ETL: {str(e)}")
 
 

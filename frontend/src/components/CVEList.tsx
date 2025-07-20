@@ -23,18 +23,21 @@ const CVEList: React.FC<{ search: string }> = ({ search }) => {
     queryKey: [search ? 'cves-search' : 'cves', search, page, limit, severity, cvssSort],
     queryFn: async () => {
       if (search) {
-        const items = await api.searchCVEs(
+        // Use Elasticsearch search
+        const response = await api.searchElasticsearch(
           search, 
-          page * limit, 
-          limit, 
           severity !== "ALL" ? severity : undefined,
-          cvssSort !== "none" ? "cvss_v3_score" : undefined,
-          cvssSort !== "none" ? cvssSort : undefined
+          undefined, // minCvssScore
+          undefined, // maxCvssScore
+          undefined, // fromDate
+          undefined, // toDate
+          limit,
+          page * limit
         );
-        // Normalize to match CVEPage structure
+        
         return {
-          items,
-          total: items.length + page * limit, // Estimate total for pagination
+          items: response.results || [],
+          total: response.total || 0,
           skip: page * limit,
           limit,
         };
@@ -66,7 +69,14 @@ const CVEList: React.FC<{ search: string }> = ({ search }) => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 text-green-900 dark:text-green-100">CVE Database</h1>
+      <h1 className="text-2xl font-bold mb-6 text-green-900 dark:text-green-100">
+        CVE Database
+        {search && (
+          <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
+            (Elasticsearch Search)
+          </span>
+        )}
+      </h1>
       {/* Filter and Sort Controls */}
       <div className="flex flex-wrap gap-4 mb-4 items-center">
         {/* Severity Filter */}

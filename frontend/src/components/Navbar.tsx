@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
     const { isDarkMode, toggleDarkMode } = useDarkMode();
+    const { user, logout } = useAuth();
 
     return (
         <nav className="bg-green-50 dark:bg-gray-800 bg-opacity-50 dark:bg-opacity-90 shadow-md py-4 px-8 flex items-center justify-between">
@@ -10,6 +12,22 @@ const Navbar: React.FC = () => {
             <div className="flex items-center space-x-6">
                 <Link to="/" className="text-green-900 dark:text-green-100 hover:text-white dark:hover:text-white font-medium transition">Home</Link>
                 <Link to="/tasks" className="text-green-900 dark:text-green-100 hover:text-white dark:hover:text-white font-medium transition">ETL Task Manager</Link>
+                
+                {/* User Info */}
+                {user && (
+                    <div className="flex items-center space-x-2">
+                        <span className="text-green-900 dark:text-green-100 text-sm">
+                            {user.username} ({user.role})
+                        </span>
+                        <button
+                            onClick={logout}
+                            className="text-green-900 dark:text-green-100 hover:text-white dark:hover:text-white font-medium transition"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                )}
+                
                 {/* Dark Mode Toggle */}
                 <button
                     onClick={toggleDarkMode}
@@ -19,7 +37,7 @@ const Navbar: React.FC = () => {
                     {isDarkMode ? (
                         // Sun icon for dark mode
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
                         </svg>
                     ) : (
                         // Moon icon for light mode
@@ -28,7 +46,6 @@ const Navbar: React.FC = () => {
                         </svg>
                     )}
                 </button>
-                {/* Future: <Link to="/login" ...>Login</Link> */}
             </div>
         </nav>
     );

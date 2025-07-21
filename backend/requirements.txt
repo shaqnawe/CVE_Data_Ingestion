@@ -37,7 +37,7 @@ mdurl==0.1.2
 packaging==25.0
 passlib==1.7.4
 prompt_toolkit==3.0.51
-psycopg2==2.9.10
+psycopg2-binary
 pyasn1==0.6.1
 pycparser==2.22
 pydantic==2.11.7

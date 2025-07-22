@@ -39,11 +39,11 @@ def auth_headers(client):
         "role": "admin",
     }
     reg_response = client.post("/auth/register", json=reg_data)
-    print("Register response:", reg_response.status_code, reg_response.text)
+    # print("Register response:", reg_response.status_code, reg_response.text)
     login_data = {"email": "testuser@example.com", "password": "testpassword"}
     response = client.post("/auth/login", json=login_data)
-    print("Login response:", response.status_code, response.text, response.json())
+    # print("Login response:", response.status_code, response.text, response.json())
     token = response.json().get("access_token")
-    print("Token in conftest fixture:", token)
+    # print("Token in conftest fixture:", token)
     assert token
     return {"Authorization": f"Bearer {token}"}

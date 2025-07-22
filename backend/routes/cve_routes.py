@@ -13,7 +13,11 @@ from backend.cache import (
     deserialize_model,
 )
 from backend.celery_app import celery_app
-from backend.tasks import run_etl_pipeline_task, fetch_nvd_feed_task, transform_and_load_task
+from backend.tasks import (
+    run_etl_pipeline_task,
+    fetch_nvd_feed_task,
+    transform_and_load_task,
+)
 from backend.auth import get_current_active_user, require_role
 from typing import Optional
 
@@ -189,7 +193,10 @@ def trigger_etl(request: Request, current_user: User = Depends(require_role("adm
         }
     except Exception as e:
         import traceback
-        error_details = f"Failed to trigger ETL: {str(e)}\nTraceback: {traceback.format_exc()}"
+
+        error_details = (
+            f"Failed to trigger ETL: {str(e)}\nTraceback: {traceback.format_exc()}"
+        )
         print(f"ETL Error: {error_details}")  # Log to console
         raise HTTPException(status_code=500, detail=f"Failed to trigger ETL: {str(e)}")
 

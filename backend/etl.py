@@ -7,11 +7,11 @@ import logging
 import time
 from datetime import datetime
 from typing import Any
-from db import get_context_session
 from dotenv import load_dotenv
-from crud import upsert_cve_items
-from models import CVEItem, CVEReference
-from elasticsearch_config import bulk_index_cve_items, create_cve_index
+from backend.models import CVEItem, CVEReference
+from backend.elasticsearch_config import bulk_index_cve_items, create_cve_index
+from backend.db import get_context_session
+from backend.crud import upsert_cve_items
 
 load_dotenv()
 NVD_RECENT_FEED_URL = os.getenv("NVD_RECENT_FEED_URL", "")

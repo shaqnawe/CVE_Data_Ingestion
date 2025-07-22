@@ -61,8 +61,13 @@ const CVEList: React.FC<{ search: string }> = ({ search }) => {
     return <div className="text-red-500 dark:text-red-400">Error loading CVEs: {error.message}</div>;
   }
 
-  if (!data) {
-    return <div className="text-green-900 dark:text-green-100">No data available</div>;
+  if (!data || (data.items && data.items.length === 0)) {
+    return (
+      <div className="text-green-900 dark:text-green-100 text-center mt-8">
+        No CVEs found.<br />
+        {`If this is your first time, please run the ETL pipeline to load data.`}
+      </div>
+    );
   }
 
   const totalPages = Math.max(1, Math.ceil(data.total / limit));

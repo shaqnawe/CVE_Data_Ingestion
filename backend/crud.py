@@ -1,6 +1,6 @@
 from sqlmodel import Session
 from sqlalchemy.dialects.postgresql import insert
-from models import CVEItem
+from backend.models import CVEItem
 
 
 def upsert_cve_items(session: Session, cve_items):

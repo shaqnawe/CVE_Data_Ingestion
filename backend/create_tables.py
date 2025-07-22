@@ -1,6 +1,5 @@
-# create_tables.py
-from db import engine
-from models import SQLModel
+from backend.db import engine
+from backend.models import SQLModel
 
 print("Creating tables...")
 SQLModel.metadata.create_all(engine)

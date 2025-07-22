@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
-from models import User
-from auth import get_current_active_user
-from elasticsearch_config import search_cves, get_index_stats, delete_cve_index
+from backend.models import User
+from backend.auth import get_current_active_user, require_role
+from backend.elasticsearch_config import search_cves, get_index_stats, create_cve_index, delete_cve_index
+from backend.limiter import limiter
 
 router = APIRouter(prefix="/elasticsearch", tags=["elasticsearch"])
 

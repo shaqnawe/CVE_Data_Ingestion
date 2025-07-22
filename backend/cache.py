@@ -1,10 +1,11 @@
-import redis
 import os
+import redis
 from dotenv import load_dotenv
 import json
 from typing import Type, TypeVar
 from pydantic import BaseModel
 import logging
+from backend.limiter import limiter
 
 load_dotenv()
 

@@ -13,7 +13,7 @@ celery_app = Celery(
     "cve_etl",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
-    include=["tasks"],
+    include=["backend.tasks"],
 )
 
 # Celery settings

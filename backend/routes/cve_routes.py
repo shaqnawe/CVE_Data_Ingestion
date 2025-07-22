@@ -1,20 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlmodel import Session, select, cast, String
-from db import get_session
-from models import CVEItem, CVEPage, User
-import etl
+from backend.db import get_session
+from backend.models import CVEItem, CVEPage, User
+import backend.etl as etl
 from sqlalchemy import func, desc, asc
-from limiter import limiter
-from cache import (
+from backend.limiter import limiter
+from backend.cache import (
     get_cache,
     set_cache,
     make_cache_key,
     serialize_model,
     deserialize_model,
 )
-from celery_app import celery_app
-from tasks import run_etl_pipeline, fetch_nvd_feed, transform_and_load
-from auth import get_current_active_user, require_role
+from backend.celery_app import celery_app
+from backend.tasks import run_etl_pipeline_task, fetch_nvd_feed_task, transform_and_load_task
+from backend.auth import get_current_active_user, require_role
 from typing import Optional
 
 router = APIRouter()
@@ -181,7 +181,7 @@ def search_cves(
 @limiter.limit("1/minute")
 def trigger_etl(request: Request, current_user: User = Depends(require_role("admin"))):
     try:
-        task = run_etl_pipeline.delay()
+        task = run_etl_pipeline_task.delay()
         return {
             "message": "ETL pipeline triggered successfully",
             "task_id": task.id,
@@ -224,7 +224,7 @@ def get_task_status(task_id: str):
 @limiter.limit("5/minute")
 def trigger_fetch(request: Request):
     try:
-        task = fetch_nvd_feed.delay()
+        task = fetch_nvd_feed_task.delay()
         return {
             "message": "Fetch triggered successfully",
             "task_id": task.id,
@@ -240,7 +240,7 @@ def trigger_fetch(request: Request):
 @limiter.limit("5/minute")
 def trigger_transform(request: Request):
     try:
-        task = transform_and_load.delay()
+        task = transform_and_load_task.delay()
         return {
             "message": "Transform and load triggered successfully",
             "task_id": task.id,

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { TaskStatus } from '../types';
@@ -7,6 +7,7 @@ import { getStatusColor, getStatusText } from '../utils/taskHelpers';
 const TaskManager = () => {
     const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
     const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
+    const queryClient = useQueryClient();
 
     const triggerETLMutation = useMutation({
         mutationFn: api.triggerETL,
@@ -34,8 +35,13 @@ const TaskManager = () => {
         setTaskStatus(latestStatus);
         if (latestStatus.status === 'SUCCESS' || latestStatus.status === 'FAILURE') {
             setActiveTaskId(null);
+            if (latestStatus.status === 'SUCCESS') {
+                // Invalidate CVE list queries to trigger a refetch
+                queryClient.invalidateQueries({ queryKey: ['cves'] });
+                queryClient.invalidateQueries({ queryKey: ['cves-search'] });
+            }
         }
-    }, [latestStatus]);
+    }, [latestStatus, queryClient]);
 
     // Extract progress information from task result
     const getProgressInfo = (taskStatus: TaskStatus) => {

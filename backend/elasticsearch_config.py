@@ -1,7 +1,7 @@
 import os
 from elasticsearch import Elasticsearch
-from typing import List, Dict, Any
-from models import CVEItem
+from typing import Any
+from backend.models import CVEItem
 
 # Elasticsearch configuration
 ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
@@ -99,7 +99,7 @@ def index_cve_item(cve_item: CVEItem) -> bool:
         return False
 
 
-def bulk_index_cve_items(cve_items: List[CVEItem]) -> Dict[str, int]:
+def bulk_index_cve_items(cve_items: list[CVEItem]) -> dict[str, int]:
     """Bulk index multiple CVE items."""
     success_count = 0
     error_count = 0
@@ -126,7 +126,7 @@ def search_cves(
     to_date: str | None = None,
     size: int = 10,
     from_: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Search CVEs using Elasticsearch."""
     search_body = {
         "query": {

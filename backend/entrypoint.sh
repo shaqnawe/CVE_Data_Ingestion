@@ -2,13 +2,12 @@
 set -e
 
 # Wait for Postgres to be ready
-echo "Waiting for Postgres..."
-while ! nc -z postgres 5432; do
-  sleep 1
+until pg_isready -h postgres -p 5432; do
+  echo "Waiting for postgres..."
+  sleep 2
 done
 
 # Create tables
-echo "Creating tables if they do not exist..."
 python create_tables.py
 
 # Start the FastAPI server

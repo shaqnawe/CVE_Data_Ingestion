@@ -1,15 +1,12 @@
----
-
 ## Common Commands
 
-- **Check Celery workers:**  
+- **Check Celery workers:**
   `docker-compose exec backend celery -A backend.celery_app.celery_app status`
 - **Check Redis cache:**  
   `docker-compose exec redis redis-cli ping`
 - **Create DB tables manually:**  
   `docker-compose run --rm backend python backend/create_tables.py`
 
----
 
 ## CI/CD
 

@@ -6,13 +6,13 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import Session, select
-from backend.models import User, TokenData, UserRole
+from backend.models import User, TokenData
 from backend.db import get_session
 
 # Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60  # Increased to 1 hour
+ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -107,10 +107,7 @@ def require_role(required_role: str):
     """Dependency to require a specific user role."""
 
     def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
-        if (
-            current_user.role.value != required_role
-            and current_user.role.value != "admin"
-        ):
+        if current_user.role.value not in (required_role, "admin"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
             )

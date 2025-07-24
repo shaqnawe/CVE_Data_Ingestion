@@ -5,7 +5,6 @@ import json
 from typing import Type, TypeVar
 from pydantic import BaseModel
 import logging
-from backend.limiter import limiter
 
 load_dotenv()
 
@@ -47,7 +46,9 @@ def get_cache(key: str):
             logger.info(f"[CACHE MISS] {versioned_key}")
             return None
         if not isinstance(cached, str):
-            logger.warning(f"[CACHE TYPE WARNING] {versioned_key} is not a string. Type: {type(cached)}")
+            logger.warning(
+                f"[CACHE TYPE WARNING] {versioned_key} is not a string. Type: {type(cached)}"
+            )
             return None
         logger.info(f"[CACHE HIT] {versioned_key}")
         try:

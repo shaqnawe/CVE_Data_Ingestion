@@ -2,9 +2,9 @@ import io
 import os
 import gzip
 import json
-import requests
-import logging
 import time
+import logging
+import requests
 from datetime import datetime
 from typing import Any
 from dotenv import load_dotenv
@@ -194,7 +194,9 @@ def transform_and_load() -> dict[str, Any]:
         logger.info("Indexing CVE items in Elasticsearch...")
         es_metrics = bulk_index_cve_items(cve_items)
         metrics["elasticsearch"] = es_metrics
-        logger.info(f"Elasticsearch indexing: {es_metrics['success_count']} successful, {es_metrics['error_count']} errors")
+        logger.info(
+            f"Elasticsearch indexing: {es_metrics['success_count']} successful, {es_metrics['error_count']} errors"
+        )
 
         duration = time.time() - start_time
         metrics["duration_seconds"] = duration
@@ -257,6 +259,6 @@ def run_etl_pipeline() -> dict[str, Any]:
         pipeline_metrics["status"] = "error"
         pipeline_metrics["error"] = str(e)
         pipeline_metrics["pipeline_end"] = datetime.now().isoformat()
-        raise Exception(error_msg)
+        raise Exception(error_msg) from e
 
     return pipeline_metrics

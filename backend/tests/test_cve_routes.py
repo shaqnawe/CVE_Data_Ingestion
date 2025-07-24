@@ -20,6 +20,8 @@ def test_get_cve_by_id(client, auth_headers):
 
 
 def test_search_cves(client, auth_headers):
-    response = client.get("/cves/search/?query=buffer&skip=0&limit=5", headers=auth_headers)
+    response = client.get(
+        "/cves/search/?query=buffer&skip=0&limit=5", headers=auth_headers
+    )
     assert response.status_code == 200
-    assert isinstance(response.json(), list) 
+    assert isinstance(response.json(), list)

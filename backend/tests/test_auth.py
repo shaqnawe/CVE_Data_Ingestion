@@ -25,4 +25,4 @@ def test_get_current_user_info(client, auth_headers):
     response = client.get("/auth/me", headers=auth_headers)
     print("Me response:", response.status_code, response.text)
     assert response.status_code == 200
-    assert response.json()["username"] == "testuser"
+    assert response.json().get("username") == "testuser"

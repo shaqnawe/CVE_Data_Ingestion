@@ -34,6 +34,6 @@ celery_app.conf.update(
 celery_app.conf.beat_schedule = {
     "run-etl-pipeline": {
         "task": "tasks.run_etl_pipeline",
-        "schedule": 360,  # Run every hour
+        "schedule": 60 * 60,  # Run every hour
     },
 }

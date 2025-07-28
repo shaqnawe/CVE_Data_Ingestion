@@ -41,7 +41,7 @@ def fetch_nvd(request: Request, current_user: User = Depends(require_role("admin
 def ingest_nvd_feed(
     request: Request, current_user: User = Depends(require_role("admin"))
 ):
-    pipeline_metrics = etl.run_etl_pipeline()
+    pipeline_metrics = etl.run_etl_pipeline(triggered_by="manual")
     return {
         "message": "NVD feed fetched, parsed, and loaded into database",
         "metrics": pipeline_metrics,

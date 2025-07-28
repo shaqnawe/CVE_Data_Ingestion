@@ -20,7 +20,7 @@ def run_etl_pipeline_task(self):
     """
     try:
         logger.info(f"Starting ETL pipeline task {self.request.id}")
-        pipeline_metrics = run_etl_pipeline()
+        pipeline_metrics = run_etl_pipeline(triggered_by="celery-beat")
         self.update_state(
             state="SUCCESS",
             meta={

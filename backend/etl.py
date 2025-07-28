@@ -35,6 +35,8 @@ def fetch_and_save_feed() -> dict[str, Any]:
     Fetch NVD feed and save to local file.
     Returns metrics about the operation.
     """
+    if not NVD_RECENT_FEED_URL:
+        raise ValueError("NVD_RECENT_FEED_URL environment variable is required")
     start_time = time.time()
     metrics = {
         "start_time": datetime.now().isoformat(),
@@ -210,11 +212,19 @@ def transform_and_load() -> dict[str, Any]:
         metrics["status"] = "error"
         metrics["error"] = str(e)
         raise Exception(error_msg)
+    finally:
+        # Cleanup: Remove the temporary feed file
+        try:
+            if os.path.exists("nvd_recent_feed.json"):
+                os.remove("nvd_recent_feed.json")
+                logger.info("Cleaned up temporary feed file")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup feed file: {e}")
 
     return metrics
 
 
-def run_etl_pipeline() -> dict[str, Any]:
+def run_etl_pipeline(triggered_by: str = "manual") -> dict[str, Any]:
     """
     Run the complete ETL pipeline with comprehensive monitoring.
     Returns overall pipeline metrics.

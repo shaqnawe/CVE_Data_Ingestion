@@ -61,7 +61,7 @@ services:
       - elasticsearch
   frontend:
     build: ./frontend
-    command: npm run dev
+    command: npm run dev -- --host
     volumes:
       - ./frontend:/app
       - /app/node_modules

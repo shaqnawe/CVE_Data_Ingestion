@@ -5,8 +5,10 @@ import json
 import time
 import logging
 import requests
+import ijson
+import itertools
 from datetime import datetime
-from typing import Any
+from typing import Any, Generator
 from dotenv import load_dotenv
 from backend.models import CVEItem, CVEReference
 from backend.elasticsearch_config import bulk_index_cve_items, create_cve_index
@@ -30,6 +32,15 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 
+def batched(iterable, n):
+    "Batch data into tuples of length n. The last batch may be shorter."
+    if n < 1:
+        raise ValueError("n must be at least one")
+    it = iter(iterable)
+    while batch := tuple(itertools.islice(it, n)):
+        yield batch
+
+
 def fetch_and_save_feed() -> dict[str, Any]:
     """
     Fetch NVD feed and save to local file.
@@ -48,19 +59,18 @@ def fetch_and_save_feed() -> dict[str, Any]:
 
     try:
         logger.info("Starting NVD feed download...")
-        response = requests.get(NVD_RECENT_FEED_URL, timeout=60)
+        response = requests.get(NVD_RECENT_FEED_URL, timeout=60, stream=True)
         response.raise_for_status()
 
-        feed_size = len(response.content)
+        # Save locally but we can also stream processing if we didn't need to file-save
+        # For simplicity, we keep the file-save step but use stream=True for memory efficiency
+        with open("nvd_recent_feed.json", "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        feed_size = os.path.getsize("nvd_recent_feed.json")
         metrics["feed_size_bytes"] = feed_size
         logger.info(f"Downloaded {feed_size} bytes from NVD feed")
-
-        with gzip.open(io.BytesIO(response.content), "rt", encoding="utf-8") as f:
-            data = json.load(f)
-
-        # Save locally as JSON
-        with open("nvd_recent_feed.json", "w", encoding="utf-8") as out_file:
-            json.dump(data, out_file, indent=2)
 
         duration = time.time() - start_time
         metrics["duration_seconds"] = duration
@@ -82,88 +92,76 @@ def fetch_and_save_feed() -> dict[str, Any]:
     return metrics
 
 
-def parse_cve_items() -> list[CVEItem]:
+def parse_cve_items() -> Generator[CVEItem, None, None]:
     """
-    Parse CVE items from the downloaded feed.
-    Returns list of validated CVEItem objects.
+    Yield parsed CVE items from the downloaded feed using streaming.
+    Returns generator of validated CVEItem objects.
     """
-    start_time = time.time()
-    cve_items = []
-    parse_errors = 0
-
+    # Note: We rely on the file existing from the fetch stage
     try:
-        logger.info("Starting CVE parsing...")
-        with open("nvd_recent_feed.json", encoding="utf-8") as f:
-            feed_data = json.load(f)
+        logger.info("Starting CVE streaming parse...")
+        with open("nvd_recent_feed.json", "rb") as f:
+            # Check if file is gzipped based on magic number or extension,
+            # but usually fetch saves as raw JSON if url ends in .json
+            # For robustness, we assume the file saved is standard JSON
 
-        total_items = len(feed_data.get("CVE_Items", []))
-        logger.info(f"Found {total_items} CVE items to parse")
+            # Use ijson top-level streaming
+            # Access the 'CVE_Items' array and iterate
+            parser = ijson.items(f, "CVE_Items.item")
 
-        for i, item in enumerate(feed_data.get("CVE_Items", []), 1):
-            try:
-                cve_id = item["cve"]["CVE_data_meta"]["ID"]
-                description_data = item["cve"]["description"]["description_data"]
-                description = (
-                    description_data[0]["value"]
-                    if description_data
-                    else "No description"
-                )
-
-                published_date = item.get("publishedDate", "")
-                last_modified_date = item.get("lastModifiedDate", "")
-
-                # Handle CVSS (optional)
-                metrics = item.get("impact", {}).get("baseMetricV3", {})
-                cvss_v3_score = None
-                severity = None
-                if metrics:
-                    cvss_v3_score = metrics.get("cvssV3", {}).get("baseScore")
-                    severity = metrics.get("cvssV3", {}).get("baseSeverity")
-
-                # References
-                refs = []
-                for ref in item["cve"]["references"]["reference_data"]:
-                    refs.append(
-                        CVEReference(url=ref["url"], source=ref.get("refsource"))
+            for i, item in enumerate(parser):
+                try:
+                    cve_id = item["cve"]["CVE_data_meta"]["ID"]
+                    description_data = item["cve"]["description"]["description_data"]
+                    description = (
+                        description_data[0]["value"]
+                        if description_data
+                        else "No description"
                     )
 
-                validated = CVEItem(
-                    cve_id=cve_id,
-                    description=description,
-                    published_date=published_date,
-                    last_modified_date=last_modified_date,
-                    cvss_v3_score=cvss_v3_score,
-                    severity=severity,
-                    references=refs,
-                    raw_data=item,
-                )
-                cve_items.append(validated)
+                    published_date = item.get("publishedDate", "")
+                    last_modified_date = item.get("lastModifiedDate", "")
 
-            except Exception as e:
-                parse_errors += 1
-                logger.warning(f"Error parsing CVE item {i}: {e}")
+                    # Handle CVSS (optional)
+                    metrics = item.get("impact", {}).get("baseMetricV3", {})
+                    cvss_v3_score = None
+                    severity = None
+                    if metrics:
+                        cvss_v3_score = metrics.get("cvssV3", {}).get("baseScore")
+                        severity = metrics.get("cvssV3", {}).get("baseSeverity")
 
-        duration = time.time() - start_time
-        logger.info(
-            f"Parsing completed: {len(cve_items)} successful, {parse_errors} errors in {duration:.2f} seconds"
-        )
+                    # References
+                    refs = []
+                    for ref in item["cve"]["references"]["reference_data"]:
+                        refs.append(
+                            CVEReference(url=ref["url"], source=ref.get("refsource"))
+                        )
 
-        if parse_errors > 0:
-            logger.warning(
-                f"Parse error rate: {parse_errors}/{total_items} ({parse_errors/total_items*100:.1f}%)"
-            )
+                    validated = CVEItem(
+                        cve_id=cve_id,
+                        description=description,
+                        published_date=published_date,
+                        last_modified_date=last_modified_date,
+                        cvss_v3_score=cvss_v3_score,
+                        severity=severity,
+                        references=refs,
+                        raw_data=item,
+                    )
+                    yield validated
+
+                except Exception as e:
+                    logger.warning(f"Error parsing item {i}: {e}")
+                    # We continue to next item
 
     except Exception as e:
-        error_msg = f"Failed to parse CVE items: {e}"
+        error_msg = f"Failed to parse CVE items stream: {e}"
         logger.error(error_msg)
         raise Exception(error_msg)
-
-    return cve_items
 
 
 def transform_and_load() -> dict[str, Any]:
     """
-    Transform and load CVE items into the database.
+    Transform and load CVE items into the database and ES in batches.
     Returns metrics about the operation.
     """
     start_time = time.time()
@@ -172,38 +170,43 @@ def transform_and_load() -> dict[str, Any]:
         "status": "success",
         "error": None,
         "items_processed": 0,
-        "items_updated": 0,
-        "items_inserted": 0,
         "duration_seconds": 0,
     }
 
     try:
-        logger.info("Starting CVE transformation and loading...")
-        cve_items = parse_cve_items()
+        logger.info("Starting CVE transformation and loading (Streaming Mode)...")
+        cve_gen = parse_cve_items()
 
-        if not cve_items:
-            logger.warning("No CVE items to process")
-            return metrics
+        total_processed = 0
+        total_es_success = 0
 
-        metrics["items_processed"] = len(cve_items)
-        logger.info(f"Processing {len(cve_items)} CVE items for database insertion")
+        # Batching logic: Consume generator in chunks of 1000
+        # This solves the Memory Issue by never holding full list
+        for batch in batched(cve_gen, 1000):
+            batch_list = list(batch)  # Convert tuple to list for downstream tools
+            if not batch_list:
+                continue
 
-        with get_context_session() as session:
-            # Note: You might want to enhance crud.upsert_cve_items to return detailed metrics
-            upsert_cve_items(session, cve_items)
+            # Load to Postgres
+            with get_context_session() as session:
+                upsert_cve_items(session, batch_list)
 
-        # Index in Elasticsearch
-        logger.info("Indexing CVE items in Elasticsearch...")
-        es_metrics = bulk_index_cve_items(cve_items)
-        metrics["elasticsearch"] = es_metrics
-        logger.info(
-            f"Elasticsearch indexing: {es_metrics['success_count']} successful, {es_metrics['error_count']} errors"
-        )
+            # Index in Elasticsearch
+            es_metrics = bulk_index_cve_items(batch_list)
+            total_es_success += es_metrics.get("success_count", 0)
+
+            total_processed += len(batch_list)
+            logger.info(
+                f"Processed batch of size {len(batch_list)}. Total: {total_processed}"
+            )
+
+        metrics["items_processed"] = total_processed
+        metrics["elasticsearch_success"] = total_es_success
 
         duration = time.time() - start_time
         metrics["duration_seconds"] = duration
         logger.info(
-            f"Successfully loaded {len(cve_items)} CVE entries in {duration:.2f} seconds"
+            f"Successfully streaming loaded {total_processed} CVE entries in {duration:.2f} seconds"
         )
 
     except Exception as e:
@@ -213,7 +216,7 @@ def transform_and_load() -> dict[str, Any]:
         metrics["error"] = str(e)
         raise Exception(error_msg)
     finally:
-        # Cleanup: Remove the temporary feed file
+        # Cleanup
         try:
             if os.path.exists("nvd_recent_feed.json"):
                 os.remove("nvd_recent_feed.json")

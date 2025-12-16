@@ -6,7 +6,6 @@ import itertools
 
 def batched(iterable, n):
     "Batch data into tuples of length n. The last batch may be shorter."
-    # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:
         raise ValueError("n must be at least one")
     it = iter(iterable)
@@ -19,7 +18,6 @@ def upsert_cve_items(session: Session, cve_items):
         print("No items to upsert.")
         return
 
-    # Use Pydantic 2's proper serialization - Generator Expression for lazy evaluation
     values = (item.model_dump(exclude={"id"}, mode="json") for item in cve_items)
 
     for batch in batched(values, 1000):

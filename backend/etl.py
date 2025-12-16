@@ -180,10 +180,9 @@ def transform_and_load() -> dict[str, Any]:
         total_processed = 0
         total_es_success = 0
 
-        # Batching logic: Consume generator in chunks of 1000
-        # This solves the Memory Issue by never holding full list
+        # Batching to prevent memory exhaustion
         for batch in batched(cve_gen, 1000):
-            batch_list = list(batch)  # Convert tuple to list for downstream tools
+            batch_list = list(batch)
             if not batch_list:
                 continue
 

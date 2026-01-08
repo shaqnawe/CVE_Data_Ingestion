@@ -133,25 +133,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const errorData = await response.json();
         setError(errorData.detail || 'Registration failed');
       }
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem('auth_token');
-      setError(null);
-    };
+    } catch (_error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const value: AuthContextType = {
-      user,
-      token,
-      login,
-      register,
-      logout,
-      isLoading,
-      error,
-    };
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('auth_token');
+    setError(null);
+  };
 
-    return (
-      <AuthContext.Provider value={value}>
-        {children}
-      </AuthContext.Provider>
-    );
-  }; 
+  const value: AuthContextType = {
+    user,
+    token,
+    login,
+    register,
+    logout,
+    isLoading,
+    error,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}; 

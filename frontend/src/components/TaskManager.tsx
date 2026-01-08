@@ -47,7 +47,7 @@ const TaskManager = () => {
     const getProgressInfo = (taskStatus: TaskStatus) => {
         if (!taskStatus.result) return null;
 
-        const result = taskStatus.result as any;
+        const result = taskStatus.result as { progress?: number; status?: string; stage?: string };
         return {
             progress: result.progress || 0,
             status: result.status || 'Processing...',

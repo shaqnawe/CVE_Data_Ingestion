@@ -31,8 +31,8 @@ export const api = {
         skip: number = 0,
         limit: number = 10,
         severity?: string,
-        sort_by?: string,
-        order?: string
+        _sort_by?: string,
+        _order?: string
     ): Promise<CVEPage> => {
         const params = new URLSearchParams({
             skip: skip.toString(),
@@ -65,8 +65,8 @@ export const api = {
         skip: number = 0,
         limit: number = 10,
         severity?: string,
-        sort_by?: string,
-        order?: string
+        _sort_by?: string,
+        _order?: string
     ): Promise<CVEItem[]> => {
         // Use Elasticsearch search instead of PostgreSQL
         const response = await api.searchElasticsearch(
@@ -79,7 +79,7 @@ export const api = {
             limit,
             skip
         );
-        
+
         return response.results || [];
     },
 
@@ -126,25 +126,25 @@ export const api = {
         toDate?: string,
         size: number = 10,
         from: number = 0
-    ): Promise<any> => {
+    ): Promise<unknown> => {
         const params = new URLSearchParams({
             query,
             size: size.toString(),
             from: from.toString(),
         });
-        
+
         if (severity) params.append('severity', severity);
         if (minCvssScore !== undefined) params.append('min_cvss_score', minCvssScore.toString());
         if (maxCvssScore !== undefined) params.append('max_cvss_score', maxCvssScore.toString());
         if (fromDate) params.append('from_date', fromDate);
         if (toDate) params.append('to_date', toDate);
-        
+
         const response = await apiClient.get(`/elasticsearch/search?${params.toString()}`);
         return response.data;
     },
 
     // Get Elasticsearch stats
-    getElasticsearchStats: async (): Promise<any> => {
+    getElasticsearchStats: async (): Promise<unknown> => {
         const response = await apiClient.get('/elasticsearch/stats');
         return response.data;
     },

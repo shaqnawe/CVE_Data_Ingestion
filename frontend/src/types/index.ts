@@ -8,7 +8,7 @@ export interface CVEItem {
     cvss_v3_score?: number;
     severity?: string;
     references?: CVEReference[];
-    raw_data?: any;
+    raw_data?: unknown;
 }
 
 export interface CVEReference {
@@ -56,13 +56,13 @@ export interface APIResponse<T> {
 // Task Management Types
 export interface TaskResult {
     entries_ingested?: number;
-    [key: string]: any; // flexible if unknown
+    [key: string]: unknown; // flexible if unknown
 }
 
 export interface TaskInfo {
     error_message?: string;
     stack_trace?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface TaskStatus {

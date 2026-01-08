@@ -69,8 +69,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setToken(null);
         setUser(null);
       }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+    } catch (_error) {
+      console.error('Error fetching user profile:', _error);
       localStorage.removeItem('auth_token');
       setToken(null);
       setUser(null);
@@ -95,10 +95,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         const authToken = data.access_token;
-        
+
         setToken(authToken);
         localStorage.setItem('auth_token', authToken);
-        
+
         // Fetch user profile
         await fetchUserProfile(authToken);
       } else {
@@ -133,33 +133,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const errorData = await response.json();
         setError(errorData.detail || 'Registration failed');
       }
-    } catch (error) {
-      setError('Network error. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('auth_token');
+      setError(null);
+    };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('auth_token');
-    setError(null);
-  };
+    const value: AuthContextType = {
+      user,
+      token,
+      login,
+      register,
+      logout,
+      isLoading,
+      error,
+    };
 
-  const value: AuthContextType = {
-    user,
-    token,
-    login,
-    register,
-    logout,
-    isLoading,
-    error,
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}; 
+    return (
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }; 

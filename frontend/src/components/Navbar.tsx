@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useDarkMode } from '../contexts/DarkModeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Navbar: React.FC = () => {
     const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -12,7 +12,7 @@ const Navbar: React.FC = () => {
             <div className="flex items-center space-x-6">
                 <Link to="/" className="text-green-900 dark:text-green-100 hover:text-white dark:hover:text-white font-medium transition">Home</Link>
                 <Link to="/tasks" className="text-green-900 dark:text-green-100 hover:text-white dark:hover:text-white font-medium transition">ETL Task Manager</Link>
-                
+
                 {/* User Info */}
                 {user && (
                     <div className="flex items-center space-x-2">
@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
                         </button>
                     </div>
                 )}
-                
+
                 {/* Dark Mode Toggle */}
                 <button
                     onClick={toggleDarkMode}

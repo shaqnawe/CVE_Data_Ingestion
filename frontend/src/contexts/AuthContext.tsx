@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 interface User {
@@ -20,15 +20,7 @@ interface AuthContextType {
   error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -106,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setError(errorData.detail || 'Login failed');
       }
     } catch (_error) {
-      setError('Network error. Please try again.');
+      setError('Network error. Please try again.' + _error);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setError(errorData.detail || 'Registration failed');
       }
     } catch (_error) {
-      setError('Network error. Please try again.');
+      setError('Network error. Please try again.' + _error);
     } finally {
       setIsLoading(false);
     }

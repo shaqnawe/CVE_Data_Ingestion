@@ -7,7 +7,8 @@ import TaskManager from './components/TaskManager';
 import AuthPage from './components/AuthPage';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { QueryProvider } from './providers/QueryProvider';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 const AppContent: React.FC = () => {
   const [search, setSearch] = useState("");

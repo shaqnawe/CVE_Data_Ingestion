@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -26,7 +26,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
             Access your CVE dashboard
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -45,7 +45,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                 placeholder="Enter your email"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Password

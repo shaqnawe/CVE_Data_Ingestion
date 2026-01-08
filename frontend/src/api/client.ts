@@ -65,8 +65,6 @@ export const api = {
         skip: number = 0,
         limit: number = 10,
         severity?: string,
-        _sort_by?: string,
-        _order?: string
     ): Promise<CVEItem[]> => {
         // Use Elasticsearch search instead of PostgreSQL
         const response = await api.searchElasticsearch(

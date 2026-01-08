@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setError(errorData.detail || 'Login failed');
       }
     } catch (_error) {
-      setError('Network error. Please try again.' + _error);
+      setError('Network error. Please try again.' + String(_error));
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setError(errorData.detail || 'Registration failed');
       }
     } catch (_error) {
-      setError('Network error. Please try again.' + _error);
+      setError('Network error. Please try again.' + String(_error));
     } finally {
       setIsLoading(false);
     }

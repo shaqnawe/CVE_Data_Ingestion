@@ -31,8 +31,8 @@ export const api = {
         skip: number = 0,
         limit: number = 10,
         severity?: string,
-        _sort_by?: string,
-        _order?: string
+        sort_by?: string,
+        order?: string
     ): Promise<CVEPage> => {
         const params = new URLSearchParams({
             skip: skip.toString(),

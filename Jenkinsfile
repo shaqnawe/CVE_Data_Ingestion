@@ -46,31 +46,12 @@ pipeline {
             }
         }
 
-        // stage('Backend Tests (Integration)') {
-        //     // This stage requires docker-compose on the host setup
-        //     steps {
-        //         script {
-        //             // Check if docker-compose is available
-        //             def dockerComposeExists = sh(script: "command -v docker-compose", returnStatus: true) == 0
-        //             if (dockerComposeExists) {
-        //                 try {
-        //                     sh 'docker-compose -f docker-compose.yml up -d db redis elasticsearch'
-        //                     // Wait for services to be ready (simplistic sleep, better to use wait-for scripts)
-        //                     sh 'sleep 20' 
-                            
-        //                     // run tests inside a container or locally if python is on host?
-        //                     // Better run inside a separate container that attaches to the network
-        //                     // Or simpler: use docker-compose run
-        //                     sh 'docker-compose run backend pytest'
-        //                 } finally {
-        //                     sh 'docker-compose down -v'
-        //                 }
-        //             } else {
-        //                 echo "Docker Compose not found, skipping integration tests."
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Sanity Check') {
+            steps {
+                echo 'Hello World! The pipeline is running correctly.'
+                sh 'echo "Running a simple shell command check"'
+            }
+        }
     }
 
     post {

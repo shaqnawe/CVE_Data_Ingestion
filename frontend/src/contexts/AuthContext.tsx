@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const errorData = await response.json();
         setError(errorData.detail || 'Login failed');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);

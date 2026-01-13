@@ -16,7 +16,6 @@ pipeline {
         }
 
         stage('Frontend Checks') {
-            echo 'Before running frontend checks!'
             agent {
                 docker { 
                     image 'node:20-alpine' 
@@ -24,6 +23,7 @@ pipeline {
                 }
             }
             steps {
+                echo 'Before running frontend checks!'
                 dir('frontend') {
                     sh 'npm ci'
                     sh 'npm run lint'
@@ -33,13 +33,13 @@ pipeline {
         }
 
         stage('Backend Checks') {
-            echo 'Before running backend checks!'
             agent {
                 docker {
                     image 'python:3.11'
                 }
             }
             steps {
+                echo 'Before running backend checks!'
                 dir('backend') {
                     sh 'pip install --upgrade pip'
                     sh 'pip install -r requirements.txt'
@@ -50,12 +50,11 @@ pipeline {
         }
 
         stage('Sanity Check') {
-            echo 'Before running sanity check!'
             steps {
+                echo 'Before running sanity check!'
                 echo 'Hello World! The pipeline is running correctly.'
                 sh 'echo "Running a simple shell command check"'
             }
-            echo 'After running sanity check!'
         }
     }
 

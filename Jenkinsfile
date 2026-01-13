@@ -10,11 +10,13 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo 'Before checking out SCM!'
                 checkout scm
             }
         }
 
         stage('Frontend Checks') {
+            echo 'Before running frontend checks!'
             agent {
                 docker { 
                     image 'node:20-alpine' 
@@ -31,6 +33,7 @@ pipeline {
         }
 
         stage('Backend Checks') {
+            echo 'Before running backend checks!'
             agent {
                 docker {
                     image 'python:3.11'
@@ -47,15 +50,18 @@ pipeline {
         }
 
         stage('Sanity Check') {
+            echo 'Before running sanity check!'
             steps {
                 echo 'Hello World! The pipeline is running correctly.'
                 sh 'echo "Running a simple shell command check"'
             }
+            echo 'After running sanity check!'
         }
     }
 
     post {
         always {
+            echo 'Cleaning up workspace!'
             cleanWs()
         }
     }
